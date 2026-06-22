@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Secrets — NUNCA commitear
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Build / runtime
+dist/
+build/
+.cache/
