@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, createHash, timingSafeEqual } from "node:crypto";
 import { env, renderDmMessage } from "../lib/env.js";
 import { sendPrivateReply } from "../lib/instagram.js";
 import { getUrlForMedia } from "../lib/post-links.js";
@@ -138,7 +138,10 @@ function verifySignature(req, rawBody) {
     createHmac("sha256", env.ig.appSecret).update(rawBody).digest("hex");
 
   // DEBUG TEMPORAL — remover después de confirmar el fix
-  console.log(`[debug] secretLen=${env.ig.appSecret?.length ?? 0} rawBodyLen=${rawBody.length}`);
+  const secretFp = createHash("sha256").update(env.ig.appSecret || "").digest("hex").slice(0, 12);
+  const bodyPreview = rawBody.toString("utf8").slice(0, 60).replace(/\s+/g, " ");
+  console.log(`[debug] secretLen=${env.ig.appSecret?.length ?? 0} secretFp=${secretFp} rawBodyLen=${rawBody.length}`);
+  console.log(`[debug] bodyPreview="${bodyPreview}"`);
   console.log(`[debug] received=${signature.slice(0, 20)}... expected=${expected.slice(0, 20)}...`);
 
   try {
