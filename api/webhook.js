@@ -39,7 +39,14 @@ function handleVerify(req, res) {
 async function handleEvent(req, res) {
   const raw = await readRawBody(req);
 
-  if (env.ig.appSecret && !verifySignature(req, raw)) {
+  // TEMP BYPASS (Fase 1 testing en Dev mode) — remover después
+  const testBypass =
+    process.env.ADMIN_SECRET &&
+    (req.url || "").includes("test_secret=" + process.env.ADMIN_SECRET);
+
+  if (testBypass) {
+    console.log("[webhook] TEST BYPASS activo — saltando verificación HMAC");
+  } else if (env.ig.appSecret && !verifySignature(req, raw)) {
     console.error("[webhook] firma HMAC inválida — request ignorado");
     return res.status(200).end();
   }
