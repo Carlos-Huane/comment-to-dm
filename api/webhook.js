@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { env, renderDmMessage } from "../lib/env.js";
 import { sendPrivateReply } from "../lib/instagram.js";
+import { getUrlForMedia } from "../lib/post-links.js";
 
 // Vercel: desactivar el body parser para leer el raw body y poder verificar
 // la firma HMAC SHA256 que Meta manda en el header X-Hub-Signature-256.
@@ -40,7 +41,6 @@ async function handleEvent(req, res) {
 
   if (env.ig.appSecret && !verifySignature(req, raw)) {
     console.error("[webhook] firma HMAC inválida — request ignorado");
-    // Devolvemos 200 igual: si mandamos 4xx Meta reintenta indefinidamente.
     return res.status(200).end();
   }
 
@@ -76,8 +76,11 @@ async function handleCommentEvent(value) {
   const commentId = value.id;
   const text = (value.text || "").toLowerCase();
   const author = value.from?.username || value.from?.id || "unknown";
+  const mediaId = value.media?.id;
 
-  console.log(`[comment] @${author}: "${value.text}" (id=${commentId})`);
+  console.log(
+    `[comment] @${author}: "${value.text}" (comment=${commentId} media=${mediaId ?? "?"})`
+  );
 
   if (!text.includes(env.bot.keyword)) {
     console.log(`[comment] keyword "${env.bot.keyword}" no detectada`);
@@ -89,7 +92,22 @@ async function handleCommentEvent(value) {
     return;
   }
 
-  const message = renderDmMessage();
+  if (!mediaId) {
+    console.warn("[comment] no llegó media.id — no se puede resolver URL");
+    return;
+  }
+
+  // Resolver URL específica del post (o fallback si no está mapeado).
+  const resolved = getUrlForMedia(mediaId);
+  const template = resolved.message || env.bot.dmTemplate;
+  const message = renderDmMessage(template, {
+    username: author,
+    url: resolved.url,
+  });
+
+  const modo = resolved.isFallback ? "FALLBACK" : `topic="${resolved.topic}"`;
+  console.log(`[resolve] media=${mediaId} → ${modo} → ${resolved.url}`);
+
   try {
     const result = await sendPrivateReply(commentId, message);
     console.log(

@@ -20,13 +20,35 @@ Alternativa self-hosted y gratuita a **ManyChat**. Basado en la **Instagram Grap
 
 ```
 api/
-  index.js       → GET /api        (status, sin llamada a Meta)
-  health.js      → GET /api/health (sanity check con llamada real a Meta)
-  webhook.js     → GET/POST /api/webhook (verify + eventos comments)
+  index.js               → GET /api        (status, sin llamada a Meta)
+  health.js              → GET /api/health (sanity check con llamada real a Meta)
+  webhook.js             → GET/POST /api/webhook (verify + eventos comments)
+  list-recent-posts.js   → GET /api/list-recent-posts?secret=XXX (admin helper)
 lib/
-  env.js         (valida env vars al import time; skip dotenv en Vercel)
-  instagram.js   (wrapper mínimo sobre Graph API)
+  env.js         (valida env vars al import time; skip dotenv en Vercel; expone renderDmMessage)
+  instagram.js   (wrapper Graph API: sendPrivateReply, getAccountInfo, getRecentMedia)
+  post-links.js  (resuelve media_id → URL usando content/post-links.json)
+content/
+  post-links.json  (mapa media_id → URL, editable + versionado en git)
+public/
+  index.html     (landing estática servida en /)
 ```
+
+## Modelo de resolución de URL
+
+**Una sola keyword global** (default `link`). La URL específica depende del **post donde se comentó** — Meta manda `value.media.id` en cada webhook, el bot usa ese id para buscar en `content/post-links.json`.
+
+Formato del JSON:
+```json
+{
+  "posts": {
+    "<media_id>": { "url": "...", "topic": "...", "message": "opcional custom" }
+  },
+  "fallback": { "url": "...", "message": "cuando no hay match" }
+}
+```
+
+Placeholders del template: `{username}` (autor del comment) y `{url}` (resuelta). El template se toma de (en orden): `posts[id].message` → `env.bot.dmTemplate` → nunca hardcodeado.
 
 ## Reglas duras
 
@@ -65,13 +87,26 @@ lib/
 
 ## Workflows comunes
 
+### Agregar un post nuevo al mapping
+
+1. Publicar el post/reel en IG
+2. `curl "https://<deploy>.vercel.app/api/list-recent-posts?secret=$ADMIN_SECRET"` → devuelve últimos 25 posts con `id` y flag `mapped`
+3. Copiar el `id` del post nuevo → agregar entrada en `content/post-links.json`:
+   ```json
+   "17984123456789": {
+     "url": "https://mi-destino.com/algo",
+     "topic": "descripción interna"
+   }
+   ```
+4. `git commit && git push` → Vercel auto-deploya
+
+### Personalizar mensaje solo para un post específico
+
+Agregar `"message": "Template custom con {username} y {url}"` a la entrada del post en `content/post-links.json`. Sobreescribe el default de `env.bot.dmTemplate`.
+
 ### Agregar una nueva keyword variant
 
-Actualmente `KEYWORD` es un solo string. Si el usuario pide "detectar varias palabras" (link, LINK, quiero, prompt), refactor `env.js` para que acepte lista separada por coma y `handleCommentEvent` haga `.some()`. Documentar cambio en README + CLAUDE.md.
-
-### Personalizar el DM según keyword
-
-Actualmente `DM_MESSAGE_TEMPLATE` es único. Si se requieren mensajes distintos según keyword, extender a estructura `keyword → {url, message}` en env vars (JSON stringified) o mover a un archivo `keywords.config.json` (que TAMBIÉN debe ir a `.gitignore`).
+Actualmente `KEYWORD` es un solo string global. Si el usuario pide "detectar varias palabras" (link, quiero, dame), refactor `env.js` para lista separada por coma y `handleCommentEvent` haga `.some()`. Cuestionar primero: ¿realmente necesita varias keywords, o basta con la URL-por-post que ya tenemos?
 
 ### Agregar autorefresh del token
 

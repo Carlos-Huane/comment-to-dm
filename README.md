@@ -32,17 +32,53 @@ DM al autor del comentario con link
 ```
 comment-to-dm/
 ├── package.json
-├── .env.example       ← template público
-├── .env               ← creds reales (gitignored)
+├── .env.example              ← template público
+├── .env                      ← creds reales (gitignored)
 ├── README.md
-├── api/               ← funciones serverless, Vercel las expone en /api/*
-│   ├── index.js       → GET /api/           (status)
-│   ├── health.js      → GET /api/health     (sanity check con Graph API)
-│   └── webhook.js     → GET+POST /api/webhook (verify + eventos)
-└── lib/               ← helpers importados por los handlers
-    ├── env.js         (valida y expone env vars)
-    └── instagram.js   (wrapper Graph API: sendPrivateReply, getAccountInfo)
+├── CLAUDE.md                 ← contexto para asistentes IA
+├── api/                      ← funciones serverless, Vercel las expone en /api/*
+│   ├── index.js              → GET /api/           (status)
+│   ├── health.js             → GET /api/health     (sanity check con Graph API)
+│   ├── webhook.js            → GET+POST /api/webhook (verify + eventos)
+│   └── list-recent-posts.js  → GET /api/list-recent-posts?secret=XXX (helper admin)
+├── lib/                      ← helpers importados por los handlers
+│   ├── env.js                (valida env vars, expone renderDmMessage)
+│   ├── instagram.js          (wrapper Graph API: sendPrivateReply, getAccountInfo, getRecentMedia)
+│   └── post-links.js         (resuelve media_id → URL usando content/post-links.json)
+├── content/
+│   └── post-links.json       ← mapa media_id (post IG) → URL (source of truth para el bot)
+└── public/
+    └── index.html            (landing estática servida en /, evita 404 default)
 ```
+
+## Cómo funciona la resolución de URL
+
+El bot usa **una sola keyword global** (default `link`). La URL específica que manda depende de **en qué post se comentó**:
+
+1. Meta envía el webhook con `media.id` (identificador del post/reel de IG)
+2. El bot busca ese `media.id` en `content/post-links.json`
+3. Si existe → manda la URL configurada para ese post
+4. Si no existe → manda el `fallback.url` con un mensaje suave
+
+**Formato de `content/post-links.json`**:
+
+```json
+{
+  "posts": {
+    "17984123456789": {
+      "url": "https://hs-wiki.vercel.app/wiki/ia-herramientas/agentes-ia",
+      "topic": "Agentes IA — carrusel #01",
+      "message": "Opcional: template custom para este post con {username} y {url}"
+    }
+  },
+  "fallback": {
+    "url": "https://hs-wiki.vercel.app",
+    "message": "Hey @{username}! Todavía no tengo link específico — explorá: {url}"
+  }
+}
+```
+
+**Placeholders del template**: `{username}` (autor del comment) y `{url}` (resuelta según el post).
 
 ## Setup local
 
@@ -237,7 +273,20 @@ Volvés a la sección "Generar tokens de acceso" → en la fila de tu cuenta, ac
 
 Si falla, verificá logs en `vercel logs <tu-proyecto>` — cualquier error de Graph API aparece ahí.
 
-### 8. Mantenimiento
+### 8. Configurar links por post
+
+Cuando publicás un post nuevo en IG:
+
+1. Obtené el `media_id` — 2 formas:
+   - **Vía endpoint helper** (recomendado): `curl "https://<tu-proyecto>.vercel.app/api/list-recent-posts?secret=$ADMIN_SECRET"` — devuelve tus últimos 25 posts con id, permalink, caption preview y flag `mapped`
+   - **Vía Graph API Explorer**: query `me/media?fields=id,caption,permalink`
+2. Editá `content/post-links.json`, agregá una entrada con la URL específica para ese post
+3. `git commit && git push` → Vercel auto-deploya en ~1 min
+4. Ya podés publicar el post con caption *"comenta LINK y te mando el paso a paso"*
+
+Cuando alguien comente `link` en ese post, el bot busca `media.id` en el JSON y manda la URL correcta.
+
+### 9. Mantenimiento
 
 - **Cada 60 días** el `IG_ACCESS_TOKEN` expira → volvés al paso 3 → regenerás → actualizás `.env` local + `vercel env` de producción → `vercel --prod`
 - Ver `CLAUDE.md` para workflows automatizables (auto-refresh via cron job) y otros patrones
