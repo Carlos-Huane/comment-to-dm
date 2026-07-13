@@ -1,7 +1,12 @@
 {
   "$schema": "./post-links.schema.json",
   "_comment": "Mapa de media_id (post/reel de IG) → URL a enviar en el DM. Editar y push → Vercel redeploya. Ver README sección 'Configurar links por post'.",
-  "posts": {},
+  "posts": {
+    "17929144074126577": {
+      "url": "https://hs-wiki.vercel.app/wiki/ia-herramientas/sampling-que-es",
+      "topic": "carrusel #5 conceptos ia sampling"
+    }
+  },
   "fallback": {
     "url": "https://hs-wiki.vercel.app",
     "message": "Hey @{username}! Todavía no tengo un link específico para este post — mientras, explorá el wiki completo: {url}"
