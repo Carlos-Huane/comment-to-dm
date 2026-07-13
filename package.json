@@ -1,18 +1,17 @@
 {
   "name": "comment-to-dm",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Comment-to-DM bot para Instagram usando Graph API directa (alternativa propia a ManyChat)",
+  "description": "Comment-to-DM bot para Instagram usando Graph API directa (deploy Vercel serverless)",
   "scripts": {
-    "start": "node src/index.mjs",
-    "dev": "node --watch src/index.mjs"
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
   },
   "dependencies": {
-    "express": "^4.21.1",
     "dotenv": "^16.4.5"
   },
   "engines": {
-    "node": ">=20"
+    "node": "24.x"
   }
 }

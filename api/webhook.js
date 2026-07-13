@@ -1,63 +1,77 @@
-import { Router } from "express";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { config, renderDmMessage } from "./config.mjs";
-import { sendPrivateReply } from "./instagram.mjs";
+import { env, renderDmMessage } from "../lib/env.js";
+import { sendPrivateReply } from "../lib/instagram.js";
 
-export const webhook = Router();
+// Vercel: desactivar el body parser para leer el raw body y poder verificar
+// la firma HMAC SHA256 que Meta manda en el header X-Hub-Signature-256.
+export const config = {
+  api: { bodyParser: false },
+};
+
+export default async function handler(req, res) {
+  if (req.method === "GET") return handleVerify(req, res);
+  if (req.method === "POST") return handleEvent(req, res);
+  return res.status(405).json({ error: "method not allowed" });
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /webhook — handshake de verificación de Meta
-// Cuando configuras el webhook en Meta Dev Console, Meta hace este GET una vez
-// con hub.mode=subscribe y un challenge. Hay que devolver el challenge en plaintext.
+// GET /api/webhook — handshake de verificación de Meta
 // ─────────────────────────────────────────────────────────────────────────────
-webhook.get("/", (req, res) => {
+function handleVerify(req, res) {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && token === config.webhook.verifyToken) {
+  if (mode === "subscribe" && token === env.webhook.verifyToken) {
     console.log("[webhook] verificación OK");
-    return res.status(200).type("text/plain").send(challenge);
+    res.setHeader("Content-Type", "text/plain");
+    return res.status(200).send(challenge);
   }
 
-  console.warn("[webhook] verificación rechazada", { mode, tokenMatch: token === config.webhook.verifyToken });
-  return res.sendStatus(403);
-});
+  console.warn("[webhook] verificación rechazada");
+  return res.status(403).end();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /webhook — eventos reales de Instagram (comentarios, mensajes, etc.)
-// Meta firma cada request con HMAC SHA256 en el header X-Hub-Signature-256.
-// Si el App Secret está configurado, verificamos. Si no, se loguea warning.
+// POST /api/webhook — eventos reales (comentarios de IG)
 // ─────────────────────────────────────────────────────────────────────────────
-webhook.post("/", async (req, res) => {
-  // Responder rápido a Meta (timeout es 20s, pero conviene devolver 200 ASAP).
-  res.sendStatus(200);
+async function handleEvent(req, res) {
+  const raw = await readRawBody(req);
 
-  if (config.ig.appSecret && !verifySignature(req)) {
+  if (env.ig.appSecret && !verifySignature(req, raw)) {
     console.error("[webhook] firma HMAC inválida — request ignorado");
-    return;
+    // Devolvemos 200 igual: si mandamos 4xx Meta reintenta indefinidamente.
+    return res.status(200).end();
   }
 
-  const body = req.body;
+  let body;
+  try {
+    body = JSON.parse(raw.toString("utf8"));
+  } catch (err) {
+    console.error("[webhook] body no es JSON:", err.message);
+    return res.status(400).end();
+  }
+
   if (body.object !== "instagram") {
     console.warn(`[webhook] object inesperado: ${body.object}`);
-    return;
+    return res.status(200).end();
   }
 
   for (const entry of body.entry || []) {
     for (const change of entry.changes || []) {
       if (change.field === "comments") {
-        await handleCommentEvent(change.value).catch((err) =>
-          console.error("[webhook] error procesando comentario:", err.message)
-        );
+        try {
+          await handleCommentEvent(change.value);
+        } catch (err) {
+          console.error("[webhook] error procesando comentario:", err.message);
+        }
       }
     }
   }
-});
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Lógica del bot: detectar keyword en el comentario → mandar DM
-// ─────────────────────────────────────────────────────────────────────────────
+  return res.status(200).end();
+}
+
 async function handleCommentEvent(value) {
   const commentId = value.id;
   const text = (value.text || "").toLowerCase();
@@ -65,13 +79,12 @@ async function handleCommentEvent(value) {
 
   console.log(`[comment] @${author}: "${value.text}" (id=${commentId})`);
 
-  if (!text.includes(config.bot.keyword)) {
-    console.log(`[comment] keyword "${config.bot.keyword}" no detectada, skip`);
+  if (!text.includes(env.bot.keyword)) {
+    console.log(`[comment] keyword "${env.bot.keyword}" no detectada`);
     return;
   }
 
-  // Evitar auto-respuesta si el comentario es de la propia cuenta.
-  if (value.from?.id === config.ig.userId) {
+  if (value.from?.id === env.ig.userId) {
     console.log("[comment] comentario propio, skip");
     return;
   }
@@ -79,22 +92,32 @@ async function handleCommentEvent(value) {
   const message = renderDmMessage();
   try {
     const result = await sendPrivateReply(commentId, message);
-    console.log(`[dm] enviado a @${author}, message_id=${result.message_id || result.id || "n/a"}`);
+    console.log(
+      `[dm] enviado a @${author}, message_id=${result.message_id || result.id || "n/a"}`
+    );
   } catch (err) {
     console.error(`[dm] falló envío a @${author}: ${err.message}`);
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Verificación HMAC: confirma que el POST viene realmente de Meta
+// Utilidades
 // ─────────────────────────────────────────────────────────────────────────────
-function verifySignature(req) {
-  const signature = req.get("x-hub-signature-256");
+async function readRawBody(req) {
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+function verifySignature(req, rawBody) {
+  const signature = req.headers["x-hub-signature-256"];
   if (!signature || !signature.startsWith("sha256=")) return false;
 
-  const expected = "sha256=" + createHmac("sha256", config.ig.appSecret)
-    .update(req.rawBody)
-    .digest("hex");
+  const expected =
+    "sha256=" +
+    createHmac("sha256", env.ig.appSecret).update(rawBody).digest("hex");
 
   try {
     return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
