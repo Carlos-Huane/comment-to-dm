@@ -113,3 +113,141 @@ Todos bajo la URL de Vercel: `https://<tu-deploy>.vercel.app`.
 
 - **Fase 1** (este repo, deploy Vercel) — uso propio: webhook + detección + DM. No requiere App Review.
 - **Fase 2** (futuro) — SaaS multi-tenant: dashboard, pagos, soporte LATAM. Requiere App Review de Meta.
+
+---
+
+## Fork this — setup para tu propia cuenta
+
+Este repo es una **plantilla**. Ninguna de las credenciales de nadie está commiteada; todo vive en `.env` (gitignored) y env vars de Vercel. Para hacer que corra sobre TU cuenta de Instagram, seguí estos pasos.
+
+### 0. Requisitos
+
+- Cuenta de Instagram **Business** o **Creator** (no funciona con personal)
+- Cuenta de developer en [developers.facebook.com](https://developers.facebook.com) (gratis)
+- Cuenta gratuita en [Vercel](https://vercel.com) (login con GitHub recomendado)
+- Node.js 20+ y `npm` instalados localmente
+
+### 1. Fork y clone
+
+```bash
+# En GitHub: click en "Fork" arriba a la derecha
+git clone https://github.com/TU_USUARIO/comment-to-dm.git
+cd comment-to-dm
+npm install
+```
+
+### 2. Crear una app en Meta Dev Console
+
+1. Ir a https://developers.facebook.com/apps/ → **Create App**
+2. Tipo: **Business**
+3. Nombre: el que quieras (ej. `mi-comment-to-dm`)
+4. Una vez creada, en el dashboard buscar el caso de uso **"Administrar mensajes y comentarios en Instagram"** y agregarlo
+5. Ir a la sección de configuración de ese caso de uso → **Configuración de la API con Instagram Login**
+
+### 3. Obtener credenciales
+
+Dentro de "Configuración de la API con Instagram Login" vas a completar 4 sub-secciones:
+
+**Sub-sección "Nombre de la app"**: anotá el **App Secret** (botón "Mostrar") → va a `IG_APP_SECRET`
+
+**Sub-sección "Permisos"**: agregá y activá estos 4:
+- `instagram_business_basic`
+- `instagram_business_manage_messages`
+- `instagram_business_manage_comments`
+- `instagram_business_content_publish`
+
+**Sub-sección "Generar tokens de acceso"**:
+1. Click en "Agregar cuenta" → autorizás tu cuenta Instagram Business/Creator
+2. Una vez aparece la cuenta, click en "Generar token" → Meta te devuelve un long-lived token (60 días)
+3. Copiar ese token → va a `IG_ACCESS_TOKEN`
+4. Anotar también el ID numérico que aparece bajo el username → va a `IG_USER_ID`
+
+**Sub-sección "Configurar webhooks"** (después del deploy, paso 5).
+
+### 4. Crear tu `.env` local
+
+```bash
+cp .env.example .env
+```
+
+Editar `.env` con:
+
+```
+IG_USER_ID=<el ID numérico de tu cuenta>
+IG_ACCESS_TOKEN=<long-lived token de 60 días>
+IG_APP_SECRET=<app secret>
+WEBHOOK_VERIFY_TOKEN=<generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
+KEYWORD=<la palabra que dispara el DM, ej. "link">
+DM_URL=<la URL que querés mandar en el DM>
+DM_MESSAGE_TEMPLATE=Hey! Acá tienes lo que pediste: {url}
+```
+
+Verificar que funciona:
+
+```bash
+node -e "import('./lib/instagram.js').then(async m => console.log(await m.getAccountInfo()))"
+```
+
+Debe imprimir tu username y user_id. Si dice "Session has expired" → volvé al paso 3 y regenerá el token.
+
+### 5. Deploy a Vercel
+
+```bash
+npm install -g vercel
+vercel login
+vercel deploy --yes         # primer deploy, te da una URL de preview
+```
+
+Sincronizar env vars al proyecto Vercel (script bash):
+
+```bash
+cat .env | grep -v '^#' | grep -v '^$' | while IFS='=' read -r key val; do
+  printf "%s" "$val" | vercel env add "$key" production --force
+done
+```
+
+Deploy final a producción:
+
+```bash
+vercel deploy --prod --yes
+```
+
+Vercel te asigna una URL tipo `https://<tu-proyecto>.vercel.app`.
+
+Verificar en browser: `https://<tu-proyecto>.vercel.app/api/health` — debe devolver `{"ok":true,...}` con tu username.
+
+### 6. Configurar el webhook en Meta
+
+Volvés a "Configuración de la API con Instagram Login" → sección **"Configurar webhooks"**:
+
+- **URL de devolución de llamada**: `https://<tu-proyecto>.vercel.app/api/webhook`
+- **Token de verificación**: el mismo valor de `WEBHOOK_VERIFY_TOKEN` de tu `.env`
+
+Click **Verificar y guardar**. Meta hace un GET al endpoint → tu función devuelve el `hub.challenge` → Meta confirma OK.
+
+Después de verificar, en la misma página marcá el campo **`comments`** en la lista de suscripciones.
+
+Volvés a la sección "Generar tokens de acceso" → en la fila de tu cuenta, activá el toggle **"Suscripción al webhook"**.
+
+### 7. Probar end-to-end
+
+1. Publicá un post o reel en tu cuenta con caption tipo: *"Comenta LINK y te mando el recurso"*
+2. Desde otra cuenta (o pedile a un amigo), comentá `link` en ese post
+3. En segundos deberías recibir un DM con el mensaje configurado
+
+Si falla, verificá logs en `vercel logs <tu-proyecto>` — cualquier error de Graph API aparece ahí.
+
+### 8. Mantenimiento
+
+- **Cada 60 días** el `IG_ACCESS_TOKEN` expira → volvés al paso 3 → regenerás → actualizás `.env` local + `vercel env` de producción → `vercel --prod`
+- Ver `CLAUDE.md` para workflows automatizables (auto-refresh via cron job) y otros patrones
+
+## Contribuir
+
+- PRs bienvenidos si mantienen el ADN: código directo, verificable, sin dependencias inventadas
+- Antes de proponer cambios grandes, abrir un issue para discutir
+- Leer `CLAUDE.md` — resume las reglas duras (raw body, HMAC, no committear `.env`)
+
+## Licencia
+
+MIT. Usalo, cambialo, cobralo. Solo no eches la culpa a nadie si algo explota.
