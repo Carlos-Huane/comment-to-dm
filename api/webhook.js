@@ -137,6 +137,10 @@ function verifySignature(req, rawBody) {
     "sha256=" +
     createHmac("sha256", env.ig.appSecret).update(rawBody).digest("hex");
 
+  // DEBUG TEMPORAL — remover después de confirmar el fix
+  console.log(`[debug] secretLen=${env.ig.appSecret?.length ?? 0} rawBodyLen=${rawBody.length}`);
+  console.log(`[debug] received=${signature.slice(0, 20)}... expected=${expected.slice(0, 20)}...`);
+
   try {
     return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
   } catch {
