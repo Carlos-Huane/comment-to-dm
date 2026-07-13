@@ -1,4 +1,4 @@
-import { createHmac, createHash, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { env, renderDmMessage } from "../lib/env.js";
 import { sendPrivateReply } from "../lib/instagram.js";
 import { getUrlForMedia } from "../lib/post-links.js";
@@ -39,14 +39,7 @@ function handleVerify(req, res) {
 async function handleEvent(req, res) {
   const raw = await readRawBody(req);
 
-  // TEMP BYPASS (Fase 1 testing en Dev mode) — remover después
-  const testBypass =
-    process.env.ADMIN_SECRET &&
-    (req.url || "").includes("test_secret=" + process.env.ADMIN_SECRET);
-
-  if (testBypass) {
-    console.log("[webhook] TEST BYPASS activo — saltando verificación HMAC");
-  } else if (env.ig.appSecret && !verifySignature(req, raw)) {
+  if (env.ig.appSecret && !verifySignature(req, raw)) {
     console.error("[webhook] firma HMAC inválida — request ignorado");
     return res.status(200).end();
   }
@@ -143,13 +136,6 @@ function verifySignature(req, rawBody) {
   const expected =
     "sha256=" +
     createHmac("sha256", env.ig.appSecret).update(rawBody).digest("hex");
-
-  // DEBUG TEMPORAL — remover después de confirmar el fix
-  const secretFp = createHash("sha256").update(env.ig.appSecret || "").digest("hex").slice(0, 12);
-  const bodyPreview = rawBody.toString("utf8").slice(0, 60).replace(/\s+/g, " ");
-  console.log(`[debug] secretLen=${env.ig.appSecret?.length ?? 0} secretFp=${secretFp} rawBodyLen=${rawBody.length}`);
-  console.log(`[debug] bodyPreview="${bodyPreview}"`);
-  console.log(`[debug] received=${signature.slice(0, 20)}... expected=${expected.slice(0, 20)}...`);
 
   try {
     return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
