@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Política de Privacidad · comment-to-dm</title>
+    <meta
+      name="description"
+      content="Política de privacidad de comment-to-dm, un bot serverless de respuesta automática por DM en Instagram."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💬%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --bg: #0a0806;
+        --panel: #161210;
+        --fg: #f0ece6;
+        --muted: #8c8680;
+        --accent: #e84b1a;
+        --border: rgba(240, 236, 230, 0.08);
+        --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+      }
+      html, body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+          sans-serif;
+        min-height: 100vh;
+        line-height: 1.65;
+      }
+      .page {
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 48px 24px 80px;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 20px;
+      }
+      h1 {
+        font-family: var(--mono);
+        font-size: clamp(28px, 4vw, 40px);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 12px;
+      }
+      .meta {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 40px;
+      }
+      h2 {
+        font-family: var(--mono);
+        font-size: 18px;
+        font-weight: 700;
+        margin: 40px 0 16px;
+        color: var(--fg);
+      }
+      h2::before {
+        content: "§ ";
+        color: var(--accent);
+      }
+      h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 24px 0 10px;
+      }
+      p, ul {
+        margin-bottom: 14px;
+        font-size: 15px;
+        color: var(--fg);
+      }
+      ul {
+        padding-left: 22px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px dashed currentColor;
+      }
+      a:hover { opacity: 0.8; }
+      code {
+        font-family: var(--mono);
+        font-size: 13px;
+        background: rgba(240, 236, 230, 0.06);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .note {
+        border-left: 3px solid var(--accent);
+        padding: 14px 18px;
+        background: rgba(232, 75, 26, 0.05);
+        border-radius: 0 8px 8px 0;
+        margin: 20px 0;
+        font-size: 14px;
+      }
+      .note strong {
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 6px;
+      }
+      .footer {
+        margin-top: 60px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .footer a { color: var(--muted); border-bottom-color: var(--muted); }
+      .toc {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px 24px;
+        margin: 24px 0 40px;
+      }
+      .toc-title {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+      .toc ol {
+        list-style: none;
+        padding: 0;
+        counter-reset: sec;
+      }
+      .toc li {
+        counter-increment: sec;
+        margin-bottom: 4px;
+        font-size: 14px;
+      }
+      .toc li::before {
+        content: counter(sec, decimal-leading-zero) " · ";
+        font-family: var(--mono);
+        color: var(--muted);
+      }
+      .toc a { border-bottom: none; }
+      .toc a:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="tag">[ legal · privacy ]</div>
+      <h1>Política de Privacidad</h1>
+      <p class="meta">
+        comment-to-dm · última actualización: 13 de julio de 2026
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Índice</div>
+        <ol>
+          <li><a href="#quien">Quién es responsable</a></li>
+          <li><a href="#que-datos">Qué datos se procesan</a></li>
+          <li><a href="#uso">Cómo se usan los datos</a></li>
+          <li><a href="#almacenamiento">Almacenamiento y retención</a></li>
+          <li><a href="#terceros">Terceros involucrados</a></li>
+          <li><a href="#derechos">Tus derechos como usuario</a></li>
+          <li><a href="#eliminar-datos">Eliminación de datos</a></li>
+          <li><a href="#cambios">Cambios en esta política</a></li>
+          <li><a href="#contacto">Contacto</a></li>
+        </ol>
+      </div>
+
+      <h2 id="quien">Quién es responsable</h2>
+      <p>
+        Esta aplicación (<code>comment-to-dm</code>) es un proyecto personal
+        desarrollado y operado por <strong>Carlos Jesús Huane Sarmiento</strong>,
+        persona natural residente en Perú. No forma parte de ninguna empresa
+        registrada.
+      </p>
+      <p>
+        Es un bot serverless que responde automáticamente con un mensaje directo
+        (DM) cuando alguien comenta una palabra clave específica en publicaciones
+        de la cuenta de Instagram del propio operador (<a
+          href="https://instagram.com/carloshuane"
+          target="_blank"
+          rel="noopener"
+          >@carloshuane</a
+        >). El código fuente completo está disponible como software libre en
+        <a
+          href="https://github.com/Carlos-Huane/comment-to-dm"
+          target="_blank"
+          rel="noopener"
+          >GitHub</a
+        >
+        bajo licencia MIT.
+      </p>
+
+      <h2 id="que-datos">Qué datos se procesan</h2>
+      <p>
+        Cuando alguien comenta en una publicación de la cuenta suscrita, Meta
+        envía un evento webhook a este servicio con los siguientes datos
+        públicos del comentario:
+      </p>
+      <ul>
+        <li>Nombre de usuario público del comentador (<code>username</code>)</li>
+        <li>ID de usuario de Instagram del comentador</li>
+        <li>Texto del comentario</li>
+        <li>ID del comentario</li>
+        <li>ID de la publicación (<code>media_id</code>)</li>
+        <li>Timestamp del evento</li>
+      </ul>
+      <p>
+        <strong>No se solicitan, almacenan ni procesan</strong> datos privados
+        como correos electrónicos, números de teléfono, ubicación, información
+        de contactos, ni ningún dato personal fuera del comentario público.
+      </p>
+
+      <h2 id="uso">Cómo se usan los datos</h2>
+      <p>
+        Los datos recibidos se usan exclusivamente para una única acción
+        automatizada:
+      </p>
+      <ol style="padding-left: 22px; margin-bottom: 14px;">
+        <li>
+          Verificar si el texto del comentario contiene una palabra clave
+          predefinida (por ejemplo, "link").
+        </li>
+        <li>
+          Si la palabra clave está presente, enviar un único mensaje directo
+          (Private Reply) al comentador con una URL relacionada al contenido de
+          la publicación.
+        </li>
+      </ol>
+      <p>
+        El DM enviado es una respuesta única al comentario específico
+        (mecanismo <em>Private Replies</em> de Meta). No se envían mensajes
+        masivos, no se agrega al usuario a listas de contactos, ni se le
+        contacta después.
+      </p>
+
+      <h2 id="almacenamiento">Almacenamiento y retención</h2>
+      <div class="note">
+        <strong>Sin base de datos</strong>
+        Este servicio es completamente <em>stateless</em>. Ninguna información
+        personal se guarda en disco, base de datos, ni ninguna forma de
+        almacenamiento persistente.
+      </div>
+      <p>
+        Cada evento se procesa en memoria durante unos milisegundos y se
+        descarta al finalizar. Los únicos registros temporales son los
+        <strong>logs operativos</strong> de la plataforma de hosting (Vercel),
+        que se retienen por hasta 30 días para fines de diagnóstico técnico y
+        se eliminan automáticamente después.
+      </p>
+
+      <h2 id="terceros">Terceros involucrados</h2>
+      <p>
+        Este servicio interactúa con las siguientes plataformas de terceros
+        para funcionar:
+      </p>
+      <ul>
+        <li>
+          <strong>Meta Platforms, Inc.</strong> — proveedor de la Instagram Graph
+          API. Su política:
+          <a
+            href="https://privacycenter.instagram.com/policy"
+            target="_blank"
+            rel="noopener"
+            >privacycenter.instagram.com/policy</a
+          >
+        </li>
+        <li>
+          <strong>Vercel Inc.</strong> — plataforma de hosting donde corre el
+          servicio. Su política:
+          <a
+            href="https://vercel.com/legal/privacy-policy"
+            target="_blank"
+            rel="noopener"
+            >vercel.com/legal/privacy-policy</a
+          >
+        </li>
+      </ul>
+
+      <h2 id="derechos">Tus derechos como usuario</h2>
+      <p>
+        Como usuario de Instagram que interactúa con publicaciones donde este
+        bot está activo, tienes derecho a:
+      </p>
+      <ul>
+        <li>No comentar la palabra clave (evita cualquier interacción)</li>
+        <li>Eliminar tu comentario en cualquier momento desde Instagram</li>
+        <li>Bloquear la cuenta operadora del bot</li>
+        <li>Reportar el bot a Meta si consideras que abusa de la plataforma</li>
+      </ul>
+
+      <h2 id="eliminar-datos">Eliminación de datos</h2>
+      <div class="note">
+        <strong>Data Deletion Instructions</strong>
+        Este servicio no almacena datos personales, por lo que
+        <strong>no existe una base de datos que eliminar</strong>. Cada
+        interacción es procesada en tiempo real y descartada inmediatamente.
+      </div>
+      <p>Aún así, si querés dejar de interactuar con el servicio:</p>
+      <ol style="padding-left: 22px; margin-bottom: 14px;">
+        <li>
+          Abrí Instagram → tu perfil → menú ☰ → <em>Configuración y actividad</em>
+        </li>
+        <li>
+          <em>Aplicaciones y sitios web</em> → buscá cualquier autorización
+          otorgada
+        </li>
+        <li>Remové el acceso o simplemente evitá comentar la palabra clave</li>
+      </ol>
+      <p>
+        Si adicionalmente querés confirmar por escrito la eliminación de
+        cualquier registro operativo de logs, escribí a
+        <a href="mailto:carloshuanesarmiento@gmail.com"
+          >carloshuanesarmiento@gmail.com</a
+        >
+        con el asunto <code>data-deletion</code> y tu username de Instagram. Se
+        responde en máximo 7 días hábiles.
+      </p>
+
+      <h2 id="cambios">Cambios en esta política</h2>
+      <p>
+        Cualquier cambio material a esta política se refleja en el campo
+        "última actualización" arriba y queda registrado públicamente en el
+        historial de git del repositorio del proyecto:
+        <a
+          href="https://github.com/Carlos-Huane/comment-to-dm/commits/main/public/privacy.html"
+          target="_blank"
+          rel="noopener"
+          >ver historial</a
+        >.
+      </p>
+
+      <h2 id="contacto">Contacto</h2>
+      <p>
+        Para cualquier consulta sobre esta política, sobre el procesamiento de
+        tu información, o para ejercer alguno de los derechos mencionados:
+      </p>
+      <ul>
+        <li>
+          Email:
+          <a href="mailto:carloshuanesarmiento@gmail.com"
+            >carloshuanesarmiento@gmail.com</a
+          >
+        </li>
+        <li>
+          Instagram:
+          <a
+            href="https://instagram.com/carloshuane"
+            target="_blank"
+            rel="noopener"
+            >@carloshuane</a
+          >
+        </li>
+        <li>
+          Código fuente:
+          <a
+            href="https://github.com/Carlos-Huane/comment-to-dm"
+            target="_blank"
+            rel="noopener"
+            >github.com/Carlos-Huane/comment-to-dm</a
+          >
+        </li>
+      </ul>
+
+      <div class="footer">
+        <a href="/">← volver al inicio</a> · comment-to-dm · MIT license
+      </div>
+    </main>
+  </body>
+</html>
